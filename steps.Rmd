@@ -1,0 +1,119 @@
+---
+title: "Steps"
+author: "EL"
+date: "Friday, October 09, 2015"
+output: html_document
+---
+
+Activity Monitoring
+======================
+Reproducible Research
+Peer Assessment 1
+
+1. Load data, assumes setwd() is already set
+2. Transform date into date class
+
+```{r}
+s<-read.csv("activity.csv")
+names(s)
+s$date<-as.Date(s$date, "%Y-%m-%d")
+
+```
+3. Calculate steps per day, with aggregate
+4. Histogram of steps
+5. mean and median of steps
+
+```{r}
+day<-aggregate(steps ~ date, data = s, sum, na.rm=TRUE)
+hist(day$steps, col="blue", main="Steps per Day", xlab="Steps", breaks=10)
+me<-mean(day$steps)
+med<-median(day$steps)
+print(me)
+print(med)
+```
+mean steps per day: `r me`  
+median steps per day: `r med`
+
+6. Time series with plot of average steps per 5-minute interval
+
+```{r}
+t<-aggregate(steps ~ interval, data=s, mean, na.rm=TRUE)
+plot(t$interval, t$steps, type="l", xlab="5-min Interval", main="Average Steps",  ylab="Average Steps per Day", col="blue")
+```
+
+7. 5-minute interval with maximum average steps
+
+```{r}
+m<-which.max(t$steps)
+m1<-t[m,1]
+m2<-t[m,2]
+t[m,]
+```
+Interval `r m1` has maximum number of average steps `r m2`.
+
+#Imputing Missing Values
+1. number of missing values
+
+```{r}
+bad<-is.na(s)
+b<-sum(bad)
+b
+```
+There are `r b` missing values in the data set
+
+2. Fill in missing values in dataset with average for that time interval
+
+```{r}
+s2<-s
+l<-length(s2$steps)
+for(i in 1:l){
+  if(is.na(s2[i,1]))
+    s2[i,1]<-t[(t$interval == s2[i,3]),2]
+  
+  }
+day2<-aggregate(steps ~ date, data=s2, sum, na.rm=TRUE)
+me2<-mean(day2$steps)
+med2<-median(day2$steps)
+print(me2)
+print(med2)
+hist(day$steps, col="green", main="Steps per Day \nImputed Missing Values", xlab="Steps", breaks=10)
+dm = me2 - me
+dmed = med2 - med
+
+```
+
+mean steps per day, with imputed missing values: `r me2`  
+difference of steps in mean from actual value: `r dm`   
+median steps per day, with imputed missing values: `r med2`  
+difference of steps in median from actual value: `r dmed`  
+
+- The mean value is not affected but the median has a slight difference.
+
+#Activity on weekdays vs. weekend
+1. create column with weekday or weekend to identify day
+2. lattice plot results of average 5-minute interval to compare activity
+
+```{r}
+
+days<-weekdays(s2$date)
+wday<-weekdays(s2$date)
+for(i in 1:l){
+  if(days[i] == "Saturday")
+    wday[i] <- "Weekend"
+  else if(days[i] == "Sunday")
+    wday[i] <- "Weekend"
+  else
+    wday[i] <- "Weekday"
+  }
+
+s2$wday<-factor(wday)
+
+t2<-aggregate(steps ~ interval + wday, data=s2, mean)
+library(lattice)
+library(grid)
+xyplot(steps ~ interval | wday, data=t2, layout=c(1,2), type="l")
+
+
+```
+
+
